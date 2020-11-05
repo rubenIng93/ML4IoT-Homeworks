@@ -1,10 +1,12 @@
 import tensorflow as tf
 
+n_samples = 16000 * 1
+
 mapping = {
             "datetime":tf.io.FixedLenFeature([], dtype=tf.int64),
             "temperature":tf.io.FixedLenFeature([], dtype=tf.int64),
             "humidity":tf.io.FixedLenFeature([], dtype=tf.int64),
-            "audio":tf.io.FixedLenFeature([], dtype=tf.float32)
+            "audio":tf.io.FixedLenFeature([n_samples], dtype=tf.float32)
         }
 
 def decoder(record):
