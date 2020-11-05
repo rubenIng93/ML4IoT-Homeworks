@@ -4,6 +4,7 @@ import argparse
 import os
 import pandas as pd
 import time
+import datetime
 
 # Conversion functions for TFDataset
 def _bytestring_feature(list_of_bytestrings):
@@ -43,10 +44,13 @@ start = time.time()
 
 with tf.io.TFRecordWriter(out_file) as writer:
     for i in range(len(csv_df)):
+
+        # 18/10/2020,09:45:34 must be converted as POSIX timestamp
+        date = time.mktime(datetime.datetime.strptime(csv_df["date"][i]+","+csv_df["time"][i], "%d/%m/%Y,%H:%M:%S").timetuple())
+        #print(date)
         
         mapping = {
-            "date":_bytestring_feature([u"".join(csv_df["date"][i]).encode("utf-8")]),
-            "time":_bytestring_feature([u"".join(csv_df["time"][i]).encode("utf-8")]),
+            "datetime":_int_feature([int(date)]),
             "temperature":_int_feature([csv_df["temperature"][i]]),
             "humidity":_int_feature([csv_df["humidity"][i]])
         }
@@ -58,4 +62,4 @@ with tf.io.TFRecordWriter(out_file) as writer:
 end = time.time()
 
 print("Conversion Done in {:.4f} s".format(end-start))
-
+print("TFRecord size: {} KB".format(os.path.getsize(out_file)/1000))
