@@ -8,13 +8,10 @@ import io
 
 # function that returns the recording sequence
 # as concatenation of binary frames
-def record_audio(samp_rate, chunk, record_sec, dev_index, resolution):
+def record_audio(pyaudio, samp_rate, chunk, record_sec, dev_index, resolution):
         
-    # instantiate the pyaudio
-    audio = pyaudio.PyAudio()
-
     # create audio stream and append audio chuncks to frame array
-    stream = audio.open(format=resolution, rate=samp_rate, channels=1,
+    stream = pyaudio.open(format=resolution, rate=samp_rate, channels=1,
                         input_device_index=dev_index, input=True,
                         frames_per_buffer=chunk)
 
@@ -31,8 +28,7 @@ def record_audio(samp_rate, chunk, record_sec, dev_index, resolution):
     # stop the stream, close it, and terminate the pyaudio instantiation
     stream.start_stream()
     stream.close()
-    audio.terminate()
-    
+        
     return buffer
 
 # function that applies the poly-phase filtering
@@ -112,6 +108,7 @@ num_samples = args.num_samples
 output_path = args.output
 
 # recording setting
+pai_audio = pyaudio.PyAudio() # instantiate the pyaudio
 samp_rate = 48000 # sampling rate 48kHz
 chunk = 4800 # size of the chunk
 record_sec = 1 # second to record
@@ -147,7 +144,7 @@ for i in range(int(num_samples)):
     start_tot = time.time()
     # record the audio
     start = time.time()
-    audio = record_audio(samp_rate, chunk, record_sec, dev_index, resolution)
+    audio = record_audio(pai_audio, samp_rate, chunk, record_sec, dev_index, resolution)
     end = time.time()
     print("\n>>>>Recording time: {:.4f} s<<<<\n".format(end-start))
     # apply resampling
@@ -165,3 +162,5 @@ for i in range(int(num_samples)):
     print("\n>>>>Preprocessing time: {:.4f} s<<<<".format(end-start, color=("green" if (end-start) < 0.080 else "red")))
     print("{:.3f}".format(end_tot-start_tot))
 print("\n***JOB DONE***")
+
+pai_audio.terminate() # close the pyaudio object
