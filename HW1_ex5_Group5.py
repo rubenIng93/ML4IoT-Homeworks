@@ -3,10 +3,8 @@ import tensorflow as tf
 import argparse
 import time
 import pyaudio
-from scipy.io import wavfile
 from scipy import signal
 import io
-from scipy.io.wavfile import read
 
 # function that returns the recording sequence
 # as concatenation of binary frames
@@ -21,12 +19,12 @@ def record_audio(samp_rate, chunk, record_sec, dev_index, resolution):
                         frames_per_buffer=chunk)
 
     print("Start Recording")
-    frames = []
 
     # loop through stream and append audio chunks to frame array
-    for ii in range(int((samp_rate / chunk) * record_sec)):
-        data = stream.read(chunk)
-        frames.append(data)
+    # instantiate the buffer
+    buffer = io.BytesIO()
+    for _ in range(int((samp_rate / chunk) * record_sec)):
+        buffer.write(stream.read(chunk))
 
     print("Stop Recording")
 
@@ -34,31 +32,36 @@ def record_audio(samp_rate, chunk, record_sec, dev_index, resolution):
     stream.start_stream()
     stream.close()
     audio.terminate()
-    binary_audio = b"".join(frames)
     
-    return binary_audio
+    return buffer
 
 # function that applies the poly-phase filtering
 # it returns the audio
 def resample_audio(audio, frequency):
     sampling_ratio = int(samp_rate / frequency)
     start = time.time()
-    audio = np.frombuffer(audio)
+    # load the audio from the buffer
+    audio = np.frombuffer(audio.getvalue())
+    #print(audio.shape)
     audio = signal.resample_poly(audio, 1, sampling_ratio)
-    # cast to the original datatype (Int16)
+    # cast to float normalizing datatype as should do decode_wav()
     #audio = audio.astype(np.int16)
     audio = audio.astype(np.float32, order='C') / 32768.0
     end = time.time()
     resampling_time = end - start
     print("Resampling time: {:.4f} s".format(resampling_time))
+    #print(audio.shape)
     return audio
 
 # It returns the spectrogram
 def retrieve_spectrogram(resampled_audio, frame_length, frame_step):
+    start = time.time()
     # convert the signal
-    resampled_audio = tf.io.parse_tensor(resampled_audio, out_type=tf.float32)
-    tf_audio, _ = tf.audio.decode_wav(resampled_audio)
-    tf_audio = tf.squeeze(resampled_audio, 1)
+    tf_audio = tf.convert_to_tensor(resampled_audio, dtype=tf.float32)
+    tf_audio = tf.reshape(tf_audio, shape=(tf_audio.shape[0], 1))
+    #print(tf_audio.shape)
+    #print(tf_audio)
+    tf_audio = tf.squeeze(tf_audio, 1)
 
     # convert the waveform in a spectrogram applying the STFT
 
@@ -68,26 +71,15 @@ def retrieve_spectrogram(resampled_audio, frame_length, frame_step):
                             fft_length=frame_length)
 
     spectrogram = tf.abs(stft)
-
+    end = time.time()
+    print("STFT done in: {:.4f} s".format(end-start))
     return spectrogram
 
 # it saves on disk the mfccs as string of bytes
-def retrieve_mfccs(spectrogram, mel_bins, lower_frequency, upper_frequency, out_file):
+def retrieve_mfccs(linear_to_mel_weight_matrix, out_file):
 
-    spectrogram = tf.io.parse_tensor(spectrogram, out_type=tf.float32)
-
-    # compute the log scale mel spec
-
-    num_spectrogram_bins = spectrogram.shape[-1]
     start = time.time()
-    linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
-        mel_bins, 
-        num_spectrogram_bins,
-        16000, # frequency
-        lower_frequency, 
-        upper_frequency
-    )
-
+    
     mel_spectrogram = tf.tensordot(
         spectrogram,
         linear_to_mel_weight_matrix,
@@ -135,30 +127,41 @@ frame_length = int(16000 * 0.040)
 # frame step = frequency(Hz) * stride(s) = 20ms
 frame_step = int(16000 * 0.020) 
 
-#mfccs setting
+# mfccs setting all these parameters are constant
+# than the matrix is constant -> compute it only once!
+num_spectrogram_bins = 321 
 mel_bins = 40
 lower_frequency = 20
 upper_frequency = 4000
+linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
+        mel_bins, 
+        num_spectrogram_bins,
+        16000, # frequency
+        lower_frequency, 
+        upper_frequency
+    )
 
-print("***Start application***")
+print("***START APPLICATION***\n")
 
 for i in range(int(num_samples)):
+    start_tot = time.time()
     # record the audio
     start = time.time()
     audio = record_audio(samp_rate, chunk, record_sec, dev_index, resolution)
     end = time.time()
-    print("Recording time: {:.4f}".format(end-start))
+    print("\n>>>>Recording time: {:.4f} s<<<<\n".format(end-start))
     # apply resampling
     start = time.time()
     audio = resample_audio(audio, resampling_frequency)
     # apply stft to get the spectrogram
     spectrogram = retrieve_spectrogram(audio, frame_length, frame_step)
     # retrieve and save on disk mfccs
-    string_path = output_path+"mfccs_sample_"+(i+1)
-    retrieve_mfccs(spectrogram, mel_bins, lower_frequency, upper_frequency, string_path)
+    string_path = output_path+"/mfccs"+str(i+1)+".bin"
+    retrieve_mfccs(linear_to_mel_weight_matrix, string_path)
     end = time.time()
-    #print(read(audio))
+    end_tot = time.time()
+    #print(audio)
     #print(type(audio))
-    print("Preprocessing time: {:.4f}".format(end-start))
-
-print("***JOB DONE***")
+    print("\n>>>>Preprocessing time: {:.4f} s<<<<".format(end-start, color=("green" if (end-start) < 0.080 else "red")))
+    print("{:.3f}".format(end_tot-start_tot))
+print("\n***JOB DONE***")
