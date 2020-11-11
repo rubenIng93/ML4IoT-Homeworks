@@ -25,7 +25,7 @@ def record_audio(stream, pyaudio, samp_rate, chunk, record_sec, dev_index, resol
     # instantiate the buffer
     buffer = io.BytesIO()
     for ii in range(int((samp_rate / chunk) * record_sec)): 
-        if ii == int((samp_rate / chunk) * record_sec) - 4:  
+        if ii == int((samp_rate / chunk) * record_sec) - 1:  
             # set the performance mode   
             subprocess.Popen(
                 ['sudo', '/bin/sh','-c','echo performance > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor']
@@ -122,7 +122,7 @@ output_path = args.output
 # recording setting
 pai_audio = pyaudio.PyAudio() # instantiate the pyaudio
 samp_rate = 48000 # sampling rate 48kHz
-chunk = 4800 # size of the chunk
+chunk = 6000 # size of the chunk
 record_sec = 1 # second to record
 dev_index = 0 # device index found by p.get_device_info_by_index(ii)
 resolution = pyaudio.paInt16 
