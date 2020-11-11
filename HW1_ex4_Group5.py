@@ -14,23 +14,18 @@ def _int_feature(list_of_ints):  # int64
 def _float_feature(list_of_floats):  # float32
     return tf.train.Feature(float_list=tf.train.FloatList(value=list_of_floats))
 
+def _bytes_feature(list_of_bytes): # bytes
+  if isinstance(list_of_bytes, type(tf.constant(0))):
+    list_of_bytes = list_of_bytes.numpy() 
+  return tf.train.Feature(bytes_list=tf.train.BytesList(value=[list_of_bytes]))
+
+
 def _audio_feature(audio_path):
-        # read the file audio
-    rate, audio = wavfile.read(audio_path)
-
-    # resampling with poly-phase filtering at the frequency 16000Hz
-    sampling_ratio = int(rate / 16000)
-    start = time.time()
-    audio = signal.resample_poly(audio, 1, sampling_ratio)
-    end = time.time()
-    resampling_time = end - start
-    print ("Resampling time: {:.4f} s".format(resampling_time))
-
-    # cast to the original datatype (Int16)
-    audio = audio.astype(np.int16)
-
+    # read the file audio
+    _, audio = wavfile.read(audio_path)
+    audio = (b''.join(audio))
     # produce the TFRecord
-    return _float_feature(audio.tolist())
+    return _bytes_feature(audio)
 
 
 # instantiate the argument parser
