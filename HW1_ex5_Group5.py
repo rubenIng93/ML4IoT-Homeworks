@@ -7,26 +7,34 @@ from scipy import signal
 import io
 import wave
 import subprocess
+import os
+import sys
 
 # function that returns the recording sequence
 # as concatenation of binary frames
 def record_audio(stream, pyaudio, samp_rate, chunk, record_sec, dev_index, resolution):
         
     stream.start_stream()
-
+    # powersafe mode
+    subprocess.Popen(
+       ['sudo', '/bin/sh','-c','echo powersave > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor']
+    )
     #print("Start Recording")
 
     # loop through stream and append audio chunks to frame array
     # instantiate the buffer
     buffer = io.BytesIO()
-    for ii in range(int((samp_rate / chunk) * record_sec)):   
+    for ii in range(int((samp_rate / chunk) * record_sec)): 
+        if ii == int((samp_rate / chunk) * record_sec) - 4:  
+            # set the performance mode   
+            subprocess.Popen(
+                ['sudo', '/bin/sh','-c','echo performance > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor']
+            )         
         buffer.write(stream.read(chunk))
-
     #print("Stop Recording")
-    subprocess.Popen(
-        ['sudo', '/bin/sh','-c','echo performance > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor']
-    )
-    # stop the stream, close it, and terminate the pyaudio instantiation
+    
+
+    # stop the stream
     stream.stop_stream()
         
     #move the cursor back to the beginning of the "file"
@@ -55,21 +63,10 @@ def resample_audio(audio, frequency):
 
 # It returns the spectrogram
 def retrieve_spectrogram(resampled_audio, frame_length, frame_step):
-    start = time.time()
     # convert the signal
-    tf_audio = tf.convert_to_tensor(resampled_audio, dtype=tf.float32)
-    end = time.time()
-    print("CONVERSION ",end-start)
-    start = time.time()
-    tf_audio = tf.reshape(tf_audio, shape=(tf_audio.shape[0], 1))
-    end = time.time()
-    print("RESHAPING ", end-start)
-    #print(tf_audio.shape)
-    #print(tf_audio)
-    start = time.time()
-    tf_audio = tf.squeeze(tf_audio, 1)
-    end = time.time()
-    print("SQUEEZE ",end-start)
+    tf_audio = tf.convert_to_tensor(resampled_audio, dtype=tf.float32)     
+    #tf_audio = tf.reshape(tf_audio, shape=(tf_audio.shape[0], 1))
+    #tf_audio = tf.squeeze(tf_audio, 1)
     # convert the waveform in a spectrogram applying the STFT
     start = time.time()
     stft = tf.signal.stft(tf_audio,
@@ -77,11 +74,8 @@ def retrieve_spectrogram(resampled_audio, frame_length, frame_step):
                             frame_step=frame_step,
                             fft_length=frame_length)
     end = time.time()
-    print("STFT ", end-start)
-    start = time.time()
+    print("STFT: {:.4f} ".format(end-start))
     spectrogram = tf.abs(stft)
-    end = time.time()
-    print("ABS ", end-start)
     #print("STFT done in: {:.4f} s".format(end-start))
     return spectrogram
 
@@ -107,6 +101,9 @@ def retrieve_mfccs(linear_to_mel_weight_matrix, out_file):
     mfccs_byte = tf.io.serialize_tensor(mfccs)
     tf.io.write_file(out_file, mfccs_byte)
 
+
+# avoid to print the warning due to the mic
+os.close(sys.stderr.fileno())
 
 # instantiate the argument parser
 parser = argparse.ArgumentParser()
@@ -159,7 +156,6 @@ linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
 
 # reset the performance counter
 subprocess.Popen(['sudo', '/bin/sh','-c','echo 1 > /sys/devices/system/cpu/cpufreq/policy0/stats/reset'])
-#print("***START APPLICATION***\n")
 
 for i in range(int(num_samples)):
     start_tot = time.time()
@@ -178,16 +174,10 @@ for i in range(int(num_samples)):
     retrieve_mfccs(linear_to_mel_weight_matrix, string_path)
     #end = time.time()
     end_tot = time.time()
-    # return in powersafe mode
-    subprocess.Popen(
-        ['sudo', '/bin/sh','-c','echo powersave > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor']
-    )
+       
     #print("\n>>>>Preprocessing time: {:.4f} s<<<<".format(end-start))
     print("{:.3f}".format(end_tot-start_tot))
     
-#print("\n***JOB DONE***")
-
-
 
 # retrieve the tiem spent for each clock freq
 subprocess.call(['cat', '/sys/devices/system/cpu/cpufreq/policy0/stats/time_in_state'])
