@@ -189,7 +189,7 @@ linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
     )
 
 # reset the performance counter
-subprocess.Popen(['sudo', '/bin/sh','-c','echo 1 > /sys/devices/system/cpu/cpufreq/policy0/stats/reset'])
+subprocess.Popen(['sudo', '/bin/sh','-c','echo 1 > /sys/devices/system/cpu/cpufreq/policy0/stats/reset']).wait()
 
 for i in range(int(num_samples)):
     start_tot = time.time()
