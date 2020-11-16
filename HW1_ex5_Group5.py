@@ -164,6 +164,7 @@ resolution = pyaudio.paInt16
 stream = pai_audio.open(format=resolution, rate=samp_rate, channels=1,
                         input_device_index=dev_index, input=True,
                         frames_per_buffer=chunk)
+stream.stop_stream()
 
 # resampling setting
 resampling_frequency = 16000 # 16 kHz
