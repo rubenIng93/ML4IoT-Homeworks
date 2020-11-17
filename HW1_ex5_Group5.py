@@ -12,59 +12,38 @@ import sys
 
 # function that returns the recording sequence
 # as concatenation of binary frames
-def record_audio(stream, pyaudio, samp_rate, chunk, record_sec, dev_index, resolution, alternative_acquisition=False):
+def record_audio(stream, pyaudio, samp_rate, chunk, record_sec, dev_index, resolution):
         
     stream.start_stream()
+
     # powersafe mode
     subprocess.Popen(
-       ['sudo', '/bin/sh','-c','echo powersave > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor']
+        ['sudo', '/bin/sh','-c','echo powersave > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor']
     )
-    #print("Start Recording")
+
+    buffer = io.BytesIO()  
 
     # loop through stream and append audio chunks to frame array
     # instantiate the buffer
 
-    if alternative_acquisition:
-        frames = []
-
-    buffer = io.BytesIO()    
-
     for ii in range(int((samp_rate / chunk) * record_sec)): 
+       
         if ii == int((samp_rate / chunk) * record_sec) - performance_mode_trigger:  
             # set the performance mode   
             subprocess.Popen(
                 ['sudo', '/bin/sh','-c','echo performance > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor']
             )
-        if alternative_acquisition:             
-            data = stream.read(chunk, exception_on_overflow=False)
-            frames.append(data)
-        else:    
-            buffer.write(stream.read(chunk, exception_on_overflow=False))
-    #print("Stop Recording")
+         
+        buffer.write(stream.read(chunk))
     
     # stop the stream
     stream.stop_stream()
-
-    if alternative_acquisition:    
-        # 2ND MODALITY
-            temp_input = wave.open(buffer, 'wb')
-            temp_input.setnchannels(1)
-            temp_input.setsampwidth(pyaudio.get_sample_size(resolution))
-            temp_input.setframerate(samp_rate)
-            temp_input.writeframes(b"".join(frames))
-            temp_input.close()
-    
+       
     # move the cursor back to the beginning of the "file"
     buffer.seek(0)
-    
-    if alternative_acquisition:
-        # 2ND MODALITY
-        sample, _ = tf.audio.decode_wav(buffer.read())
-        # this is a tensor
-        return sample
-    else:    
-        binary_audio = buffer.read()
-        return binary_audio
+         
+    binary_audio = buffer.read()
+    return binary_audio
 
 # function that applies the poly-phase filtering
 # it returns the audio
@@ -72,9 +51,7 @@ def resample_audio(audio, frequency):
     sampling_ratio = int(samp_rate / frequency)
     #start = time.time()
     # load the audio from the buffer 
-    # COMMENT IT FOR 2ND MODALITY
-    if type(audio) == bytes:
-        audio = np.frombuffer(audio, dtype=np.int16)
+    audio = np.frombuffer(audio, dtype=np.int16)
     #print(audio.shape)
     audio = signal.resample_poly(audio, 1, sampling_ratio)
     # cast to float normalizing datatype as should do decode_wav()
@@ -90,11 +67,7 @@ def resample_audio(audio, frequency):
 def retrieve_spectrogram(resampled_audio, frame_length, frame_step):
     # convert the signal
     tf_audio = tf.convert_to_tensor(resampled_audio, dtype=tf.float32)
-    
-    if tf_audio.shape == (16000, 1):
-        # 2ND MODALITY
-        tf_audio = tf.squeeze(tf_audio, 1)
-    
+           
     # convert the waveform in a spectrogram applying the STFT
     #start = time.time()
     stft = tf.signal.stft(tf_audio,
@@ -146,35 +119,39 @@ args = parser.parse_args()
 num_samples = args.num_samples
 output_path = args.output
 
-# recording setting
-performance_mode_trigger = 2
-# choose an higher value if the costraint 
-# (pre-processing < 80ms) has not been reached; must be anyway
-# less than int((samp_rate / chunk) * record_sec) in this case 10
-# the suggestion is to leave it between 1 and 3
-# otherwise starting the performance mode earlier, doesn't
-# improve the result.
+# ***RECORD SETTING***
+performance_mode_trigger = 1
+'''
+choose an higher value if the costraint 
+(pre-processing < 80ms) has not been reached; must be anyway
+less than int((samp_rate / chunk) * record_sec) in this case 10
+the suggestion is to leave it between 1 and 3
+otherwise starting the performance mode earlier, doesn't
+improve the result.
+'''
 pai_audio = pyaudio.PyAudio() # instantiate the pyaudio
 samp_rate = 48000 # sampling rate 48kHz
 chunk = 4800 # size of the chunk
 record_sec = 1 # second to record
 dev_index = 0 # device index found by p.get_device_info_by_index(ii)
 resolution = pyaudio.paInt16 
- # create audio stream and append audio chuncks to frame array
+ # create audio stream without starting
 stream = pai_audio.open(format=resolution, rate=samp_rate, channels=1,
                         input_device_index=dev_index, input=True,
-                        frames_per_buffer=chunk)
-stream.stop_stream()
+                        frames_per_buffer=chunk, start=False)
+# stop the stream that will be open in the recordin loop
+#stream.stop_stream()
 
-# resampling setting
+# ***RESAMPLING SETTING***
 resampling_frequency = 16000 # 16 kHz
 
-# spectrogram setting
+# ***SPECTROGRAM SETTING***
 # frame length = frequency=16000Hz * l(s) = 40ms
 frame_length = int(16000 * 0.040) 
 # frame step = frequency(Hz) * stride(s) = 20ms
 frame_step = int(16000 * 0.020) 
 
+# ***MFCCS SETTING***
 # mfccs setting all these parameters are constant
 # than the matrix is constant -> compute it only once!
 num_spectrogram_bins = 321 # computed as spectrogram.shape[-1]
@@ -189,14 +166,16 @@ linear_to_mel_weight_matrix = tf.signal.linear_to_mel_weight_matrix(
         upper_frequency
     )
 
+
 # reset the performance counter
 subprocess.Popen(['sudo', '/bin/sh','-c','echo 1 > /sys/devices/system/cpu/cpufreq/policy0/stats/reset']).wait()
+
 
 for i in range(int(num_samples)):
     start_tot = time.time()
     # record the audio
     #start = time.time()
-    audio = record_audio(stream, pai_audio, samp_rate, chunk, record_sec, dev_index, resolution, True)
+    audio = record_audio(stream, pai_audio, samp_rate, chunk, record_sec, dev_index, resolution)
     #end = time.time()
     #print("\n>>>>Recording time: {:.4f} s<<<<\n".format(end-start))
     # apply resampling
@@ -220,7 +199,7 @@ subprocess.call(['cat', '/sys/devices/system/cpu/cpufreq/policy0/stats/time_in_s
 # retrive the powersafe mode after the loop has been finished
 subprocess.Popen(
     ['sudo', '/bin/sh','-c','echo powersave > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor']
-)   
+)
 
 stream.close() # close the stream
 pai_audio.terminate() # close the pyaudio object
