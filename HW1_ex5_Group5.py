@@ -184,7 +184,7 @@ for i in range(int(num_samples)):
     # apply stft to get the spectrogram
     spectrogram = retrieve_spectrogram(audio, frame_length, frame_step)
     # retrieve and save on disk mfccs
-    string_path = output_path+"/mfccs"+str(i+1)+".bin"
+    string_path = output_path+"/mfccs"+str(i)+".bin"
     retrieve_mfccs(linear_to_mel_weight_matrix, string_path)
     #end = time.time()
     end_tot = time.time()
