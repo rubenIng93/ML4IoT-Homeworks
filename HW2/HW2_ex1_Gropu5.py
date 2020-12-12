@@ -4,7 +4,6 @@ import os
 import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
-#!pip install tensorflow-model-optimization
 import tensorflow_model_optimization as tfmot
 import zlib
 from tensorflow import lite as tflite
@@ -63,7 +62,6 @@ class MultiOutputMAE(tf.keras.metrics.Metric):
 
     def update_state(self, y_true, y_pred, sample_weight=None):
         error = tf.abs(y_pred - y_true)
-        #error = tf.reduce_mean(error, axis=0)
         error = tf.reduce_mean(error, axis=[0,1])
         self.total.assign_add(error)
         self.count.assign_add(1.)
