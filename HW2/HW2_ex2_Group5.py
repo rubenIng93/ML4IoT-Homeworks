@@ -265,7 +265,7 @@ elif VERSION == 'b':
 elif VERSION =='c':
     print('***The version "c" has been chosen***')
 
-    alpha = 0.51
+    alpha = 0.52
     
     model = use_dscnn(width_multiplier=alpha, learning_rate=0.01, epochs=30)
 
