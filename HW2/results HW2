@@ -1,0 +1,8 @@
+version a:
+	dscnn	a=0.31	ptq	acc=91.25%	size=24.12kB	acc(test)=90.88%
+
+version b:
+	dscnn	a=0.22	NOptq	lr=0.03	acc=	size=32.72kB	acc(test)=91.12%	lat(inference)=0.60ms
+
+version c:
+	dscnn	a=0.51	ptq	lr=0.01	acc=91.02%	size=35.19kB	acc(test)=90.12%	lat(total)=25.60ms
