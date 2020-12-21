@@ -166,8 +166,8 @@ def convert_as_tflite(path, ptq=True, print_size=True, compression=True):
             tflite_compressed = zlib.compress(tflite_model)
             fp.write(tflite_compressed)
 
-    with open(tflite_models_path+filename+'.tflite', 'wb') as fp:
-        fp.write(tflite_model)
+    #with open(tflite_models_path+filename+'.tflite', 'wb') as fp:
+        #fp.write(tflite_model)
 
     path = tflite_models_path+filename+'.zlib'
     print(f'New size is: {os.path.getsize(path)/1024:.2f} KB')
