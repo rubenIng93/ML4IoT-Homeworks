@@ -1,0 +1,6 @@
+Here:
+-little model (zlib)
+-little model (tflite)
+-little client
+
+DO NOT SEND THE .tflite model, ONLY .zlib one
