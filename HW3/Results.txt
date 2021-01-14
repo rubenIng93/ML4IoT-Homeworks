@@ -1,4 +1,4 @@
-Big Accuracy: 94,875%
+Big Accuracy: 94,75%
 Little Accuracy: 92,875%
 Little Size (zlib): 19,55 kB
 Little Total Inference Time: 34,13ms
