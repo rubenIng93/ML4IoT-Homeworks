@@ -1,0 +1,78 @@
+Big Accuracy: 94,875%
+Little Accuracy: 92,875%
+Little Size (zlib): 19,55 kB
+Little Total Inference Time: 34,13ms
+Resampling 8000kH 
+MFCC Length 400, Step 200 
+
+
+
+SCORE MARGIN <= 0.07
+Accuracy: 93,00%
+Big requests: 3
+Communication cost: 0,12MB
+
+SCORE MARGIN <= 0.08
+Accuracy: 93,125%
+Big requests: 6
+Communication cost: 0,24MB
+
+SCORE MARGIN <= 0.1
+Accuracy: 93,25%
+Big requests: 10
+Communication cost: 0,41MB
+
+SCORE MARGIN <= 0.3
+Accuracy: 93,625%
+Big requests: 28
+Communication cost: 1,13MB
+
+SCORE MARGIN <= 0.5
+Accuracy: 94%
+Big requests: 43
+Communication cost: 1,73MB
+
+SCORE MARGIN <= 0.7
+Accuracy: 94,375%
+Big requests: 67
+Communication cost: 2,67MB
+
+SCORE MARGIN <= 0.8
+Accuracy: 94,625%
+Big requests: 71
+Communication cost: 2,83MB
+
+SCORE MARGIN <= 0.9
+Accuracy: 94,25%
+Big requests: 85
+Communication cost: 3,39MB
+
+SCORE MARGIN <= 0.95
+Accuracy: 94,375%
+Big requests: 97
+Communication cost: 3,86MB
+
+SCORE MARGIN <= 0.97
+Accuracy: 94,5%
+Big requests: 109
+Communication cost: 4,35MB
+
+SCORE MARGIN <= 0.973
+Accuracy: 94,5%
+Big requests: 110
+Communication cost: 4,39MB
+
+SCORE MARGIN <= 0.974
+Accuracy: 94,5%
+Big requests: 113
+Communication cost: 4,5MB
+
+SCORE MARGIN <= 0.975
+Accuracy: 94,5%
+Big requests: 114
+Communication cost: 4,55MB
+
+SCORE MARGIN <= 0.99
+Accuracy: 94,625%
+Big requests: 130
+Communication cost: 5,15MB
