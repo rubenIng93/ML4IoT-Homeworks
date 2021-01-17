@@ -10,7 +10,7 @@ import tensorflow_model_optimization as tfmot
 from scipy import signal
 
 def save_as_keras(model, version):
-    saved_model_dir = f'.Homeworks/HW3/ex2/models_ex2/{version}'
+    saved_model_dir = f'./HW3_Group5/ex2/{version}'
     if not os.path.exists(saved_model_dir):
         os.makedirs(saved_model_dir)
 
@@ -28,7 +28,7 @@ def convert_as_tflite(path, ptq=True, print_size=True, compression=True):
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
 
     tflite_model = converter.convert()
-    tflite_models_path = './Homeworks/HW3/ex2/HW3_Group5_tflite_models/'
+    tflite_models_path = './HW3_Group5/ex2/tflite_models/'
     if not os.path.exists(tflite_models_path):
         os.makedirs(tflite_models_path)
 
@@ -52,18 +52,12 @@ def lr_scheduler(epoch, lr):
     else:
         return lr
 
-def little_scheduler(epoch, lr):
-    if epoch < 20:
-        return lr
-    else:
-        return lr  * tf.math.exp(-0.1)
-
 
 # instantiate the argument parser
 parser = argparse.ArgumentParser()
 
 # add the required arguments
-parser.add_argument("--version", type=int, help="Little or big model", 
+parser.add_argument("--version", type=int, help="Choose 1, 2 or 3", 
                     required=True)
 
 args = parser.parse_args()
@@ -182,15 +176,15 @@ zip_path = tf.keras.utils.get_file(
 data_dir = os.path.join('.', 'data', 'mini_speech_commands')
 
 # the labels are the different folders
-labels_file = open("Homeworks/HW3/labels.txt", "r")
+labels_file = open("labels.txt", "r")
 LABELS = labels_file.read()
 LABELS = np.array(LABELS.split(" "))
 labels_file.close()
 
 # retrieve the splits
-train_files = np.loadtxt('Homeworks/HW3/kws_train_split.txt', dtype=str) 
-val_files = np.loadtxt('Homeworks/HW3/kws_val_split.txt', dtype=str) 
-test_files = np.loadtxt('Homeworks/HW3/kws_test_split.txt', dtype=str)
+train_files = np.loadtxt('kws_train_split.txt', dtype=str) 
+val_files = np.loadtxt('kws_val_split.txt', dtype=str) 
+test_files = np.loadtxt('kws_test_split.txt', dtype=str)
 
 options = {
         'frame_length':400,
@@ -238,7 +232,7 @@ if VERSION == 1:
     ])
 
     # checkpoint callback
-    checkpoint_filepath = './checkpoints/kws_{}/weights'.format('big')
+    checkpoint_filepath = './checkpoints/kws_{}/weights'.format('1')
     cp = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_filepath,
         save_weights_only=True, monitor='val_sparse_categorical_accuracy', mode='max',
         save_best_only=True)
@@ -264,7 +258,7 @@ if VERSION == 1:
     print("The {} has {} parameters, Accuracy = {}".format(str(VERSION) + ' model', n_param, accuracy))
 
     # save the keras model
-    keras_dir = save_as_keras(big, 'big')
+    keras_dir = save_as_keras(big, '1')
 
     # convert in tflite
     convert_as_tflite(keras_dir, ptq=False, compression=False)
@@ -294,7 +288,7 @@ elif VERSION == 2:
     ])
 
     # checkpoint callback
-    checkpoint_filepath = './checkpoints/kws_{}/weights'.format('big')
+    checkpoint_filepath = './checkpoints/kws_{}/weights'.format('2')
     cp = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_filepath,
         save_weights_only=True, monitor='val_sparse_categorical_accuracy', mode=max,
         save_best_only=True)
@@ -320,7 +314,7 @@ elif VERSION == 2:
     print("The {} has {} parameters, Accuracy = {}".format(str(VERSION) + ' model', n_param, accuracy))
 
     # save the keras model
-    keras_dir = save_as_keras(big, 'big')
+    keras_dir = save_as_keras(big, '2')
 
     # convert in tflite
     convert_as_tflite(keras_dir, ptq=False, compression=False)
@@ -346,7 +340,7 @@ elif VERSION == 3:
     ])
 
     # checkpoint callback
-    checkpoint_filepath = './checkpoints/kws_{}/weights'.format('big')
+    checkpoint_filepath = './checkpoints/kws_{}/weights'.format('3')
     cp = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_filepath,
         save_weights_only=True, monitor='val_sparse_categorical_accuracy', mode=max,
         save_best_only=True)
@@ -372,7 +366,7 @@ elif VERSION == 3:
     print("The {} has {} parameters, Accuracy = {}".format(str(VERSION) + ' model', n_param, accuracy))
 
     # save the keras model
-    keras_dir = save_as_keras(big, 'big')
+    keras_dir = save_as_keras(big, '3')
 
     # convert in tflite
     convert_as_tflite(keras_dir, ptq=False, compression=False)
